@@ -3,6 +3,7 @@
  *
  * @version 0.0.1
  * @author Christian Blanquera <cblanquera@openovate.com>
+ * @website https://github.com/cblanquera/chops
  * @license MIT
  */
 (function() {
