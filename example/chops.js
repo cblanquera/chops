@@ -1,3 +1,10 @@
+/**
+ * Chops - Client HTML5 on Push State
+ *
+ * @version 0.0.1
+ * @author Christian Blanquera <cblanquera@openovate.com>
+ * @license MIT
+ */
 (function() {
 	var chops = function() {
 		/* Require
@@ -27,12 +34,6 @@
 			this._hijackLinks();
 			//hijack forms
 			this._hijackForms();
-			
-			//listen for a url request
-			this.on('request', function() {
-				//from a refresh - quirk
-				__refresh = false;
-			}).trigger('request');
 		};
 		
 		/* Public.Methods
@@ -44,6 +45,12 @@
 		 */
 		this.on = function(event, callback) {
 			$(window).on(event, callback);
+			
+			if(event === 'request' && __refresh) {
+				__pushLink(window.location.href);
+				__refresh = false;
+			}
+			
 			return this;
 		};
 	
@@ -96,8 +103,6 @@
 				
 				var results = pushState.apply(window.history, arguments);
 				
-				
-				
 				//now trigger something special
 				var event = jQuery.Event('request');
 				event.state = state;
@@ -109,12 +114,6 @@
 		
 		this._hijackPopState = function() {
 			window.onpopstate = function(e) {
-				//from a refresh - quirk
-				if(__refresh) {
-					__refresh = false;
-					return;
-				}
-				
 				//now trigger something special
 				var event = jQuery.Event('request');
 				event.state = e.state;
@@ -136,33 +135,7 @@
 					//stop it
 					e.preventDefault();
 					
-					var state = { 
-						url		: this.href,
-						query	: '', 
-						method	: 'GET', 
-						data	: {
-							flattened	: {},
-							expanded	: {},
-							serialized	: {},
-							json		: {}
-						} };
-					
-					//if there is a ?
-					if(state.url.indexOf('?') !== -1) {
-						state.query = state.url.split('?')[1];
-					} 
-					
-					var flat = {}, query = state.query.split('&');
-					for(var setting, i = 0; i < query.length; i++) {
-						setting = query[i].split('=');
-						flat[setting.shift()] = setting.join('=');
-					}
-					
-					state.data.serialized = state.data.flattened = flat;
-					state.data.json = state.data.expanded = __expand(state.data.serialized);
-					
-					//push the state
-					window.history.pushState(state, '', this.href);
+					__pushLink(this.href);
 				}
 			});
 		};
@@ -190,72 +163,12 @@
 				//stop it
 				e.preventDefault();
 				
-				var state = { 
-					url		: $(this).attr('action') || window.location.href,
-					query	: $(this).serialize(), 
-					method	: $(this).attr('method') || 'GET', 
-					data	: {
-						flattened	: {},
-						expanded	: {},
-						serialized	: {},
-						json		: {}
-					} };
-				
-				//populate state with what we know
-				state.method = state.method.toUpperCase();
-				
-				var flat = $(this).serializeArray();
-				
-				for(var i = 0; i < flat.length; i++) {
-					state.data.flattened[flat[i].name] = flat[i].value;
-					state.data.serialized[flat[i].name] = flat[i].value;
-				}
-				
-				//make an expanded version of the data
-				state.data.json = __expand(state.data.serialized);
-				
-				//is it a GET request ?
-				if(state.method === 'GET') {
-					//manually form the HREF
-					//if there is a ?
-					if(state.url.indexOf('?') !== -1) {
-						state.url = state.url.split('?')[0];
-					} 
-					
-					//populate the state
-					state.url += '?' + state.query;
-				}
-				
-				//it is a post, delete, put, whateva ...
-				
-				//is there files?
-				$('input[type="file"]', this).each(function() {
-					//if there is no name to this
-					if(!this.name || !this.name.length) {
-						//skip it
-						return;
-					}
-					
-					//store the files
-					state.data.flattened[this.name] = this.files;
-				});
-				
-				//make an expanded version of the data
-				state.data.expanded = __expand(state.data.flattened);
-				
-				//push the state
-				window.history.pushState(state, '', state.url);
+				__pushForm(this);
 			});
 		};
 		
 		/* Private Methods
 		-------------------------------*/
-		/**
-		 * Unflattens an object
-		 *
-		 * @param object
-		 * @return object
-		 */
 		var __expand = function(data) {
 			var i, dot, path, pointer, object = {};
 			
@@ -299,6 +212,108 @@
 			}
 			
 			return object;
+		};
+		
+		var __pushLink = function(url) {
+			var state = { 
+				url		: url,
+				query	: '', 
+				method	: 'GET', 
+				data	: {
+					flattened	: {},
+					expanded	: {},
+					serialized	: {},
+					json		: {}
+				} };
+			
+			//if there is a ?
+			if(state.url.indexOf('?') !== -1) {
+				state.query = state.url.split('?')[1];
+			} 
+			
+			//remove the origin
+			if(state.url.indexOf(window.location.origin) === 0) {
+				state.url = state.url.substr(window.location.origin.length);
+			}
+			
+			var flat = {}, query = state.query.split('&');
+			for(var setting, i = 0; i < query.length; i++) {
+				setting = query[i].split('=');
+				flat[setting.shift()] = setting.join('=');
+			}
+			
+			state.data.serialized = state.data.flattened = flat;
+			state.data.json = state.data.expanded = __expand(state.data.serialized);
+			
+			//push the state
+			window.history.pushState(state, '', url);
+		};
+		
+		var __pushForm = function(form) {
+			var url = $(form).attr('action') || window.location.href;
+				
+			var state = { 
+				url		: url,
+				query	: $(form).serialize(), 
+				method	: $(form).attr('method') || 'GET', 
+				data	: {
+					flattened	: {},
+					expanded	: {},
+					serialized	: {},
+					json		: {}
+				} };
+			
+			//populate state with what we know
+			state.method = state.method.toUpperCase();
+			
+			//remove the origin
+			if(state.url.indexOf(window.location.origin) === 0) {
+				state.url = state.url.substr(window.location.origin.length);
+			}
+			
+			var flat = $(form).serializeArray();
+			
+			for(var i = 0; i < flat.length; i++) {
+				state.data.flattened[flat[i].name] = flat[i].value;
+				state.data.serialized[flat[i].name] = flat[i].value;
+			}
+			
+			//make an expanded version of the data
+			state.data.json = __expand(state.data.serialized);
+			
+			//is it a GET request ?
+			if(state.method === 'GET') {
+				//manually form the HREF
+				//if there is a ?
+				if(state.url.indexOf('?') !== -1) {
+					state.url = state.url.split('?')[0];
+				} 
+				
+				//populate the state
+				state.url += '?' + state.query;
+			}
+			
+			//it is a post, delete, put, whateva ...
+			
+			//is there files?
+			$('input[type="file"]', form).each(function() {
+				//if there is no name to this
+				if(!this.name || !this.name.length) {
+					//skip it
+					return;
+				}
+				
+				//store the files
+				for(var i = 0; i < this.files.length; i++) {
+					state.data.flattened[this.name + '[' + i + ']'] = this.files[i];
+				}
+			});
+			
+			//make an expanded version of the data
+			state.data.expanded = __expand(state.data.flattened);
+			
+			//push the state
+			window.history.pushState(state, '', state.url);
 		};
 	};
 	
