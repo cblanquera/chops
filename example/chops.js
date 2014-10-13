@@ -30,12 +30,23 @@
 			this._hijackLinks();
 			//hijack forms
 			this._hijackForms();
-			
-			__pushLink(window.location.href);
 		};
 		
 		/* Public.Methods
 		-------------------------------*/
+		/**
+		 * Returns a default state even if one is not set
+		 *
+		 * @return object
+		 */
+		this.getState = function() {
+			if(!window.history.state) {
+				return __getState(window.location.href);
+			}
+			
+			return window.history.state;
+		};
+		
 		/**
 		 * Global event listener for the server
 		 *
@@ -206,7 +217,7 @@
 			return object;
 		};
 		
-		var __pushLink = function(url) {
+		var __getState = function(url) {
 			var state = { 
 				url		: url,
 				query	: '', 
@@ -242,36 +253,34 @@
 			state.data.serialized = state.data.flattened = flat;
 			state.data.json = state.data.expanded = __expand(state.data.serialized);
 			
+			return state;
+		};
+		
+		var __pushLink = function(url) {
+			var state = __getState(url);
+			
 			//push the state
 			window.history.pushState(state, '', url);
 		};
 		
 		var __pushForm = function(form) {
 			var url = $(form).attr('action') || window.location.href;
-				
-			var state = { 
-				url		: url,
-				query	: $(form).serialize(), 
-				method	: $(form).attr('method') || 'GET', 
-				data	: {
-					flattened	: {},
-					expanded	: {},
-					serialized	: {},
-					json		: {}
-				} };
+			
+			var state = __getState(url);
+			
+			state.method = $(form).attr('method') || 'GET'; 
+			
+			//dont use the data from the URL
+			state.data.flattened 	= {};
+			state.data.serialized 	= {};
 			
 			//populate state with what we know
 			state.method = state.method.toUpperCase();
 			
-			//remove the origin
-			if(state.url.indexOf(window.location.origin) === 0) {
-				state.url = state.url.substr(window.location.origin.length);
-			}
-			
 			var flat = $(form).serializeArray();
 			
 			for(var i = 0; i < flat.length; i++) {
-				state.data.flattened[flat[i].name] = flat[i].value;
+				state.data.flattened[flat[i].name] 	= flat[i].value;
 				state.data.serialized[flat[i].name] = flat[i].value;
 			}
 			
@@ -280,6 +289,9 @@
 			
 			//is it a GET request ?
 			if(state.method === 'GET') {
+				//remove the current query with a form generated one
+				state.query = $(form).serialize();
+				
 				//manually form the HREF
 				//if there is a ?
 				if(state.url.indexOf('?') !== -1) {
