@@ -20,14 +20,9 @@
 		-------------------------------*/
 		/* Private Properties
 		-------------------------------*/
-		var __refresh = false;
-		
 		/* Magic
 		-------------------------------*/
 		this.___construct = function() {
-			//from a refresh - quirk
-			__refresh = true;
-			
 			//hijack url changes
 			this._hijackPushState();
 			this._hijackPopState();
@@ -35,6 +30,8 @@
 			this._hijackLinks();
 			//hijack forms
 			this._hijackForms();
+			
+			__pushLink(window.location.href);
 		};
 		
 		/* Public.Methods
@@ -46,12 +43,6 @@
 		 */
 		this.on = function(event, callback) {
 			$(window).on(event, callback);
-			
-			if(event === 'request' && __refresh) {
-				__pushLink(window.location.href);
-				__refresh = false;
-			}
-			
 			return this;
 		};
 	
