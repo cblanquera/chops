@@ -360,7 +360,7 @@
 			
 			for(var setting, i = 0; i < query.length; i++) {
 				setting = query[i].split('=');
-				state.serial.push({name: setting.shift(), value: settings.join('=')});
+				state.serial.push({name: setting.shift(), value: setting.join('=')});
 			}
 			
 			return state;
