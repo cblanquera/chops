@@ -1,7 +1,7 @@
 /**
  * Chops - Client HTML5 on Push State
  *
- * @version 0.0.1
+ * @version 0.0.2
  * @author Christian Blanquera <cblanquera@openovate.com>
  * @website https://github.com/cblanquera/chops
  * @license MIT
@@ -237,12 +237,17 @@
 				state.url = state.url.substr(window.location.origin.length);
 			}
 			
-			var flat = {}, query = state.query.split('&');
+			var flat = {}, query = [];
+			
+			if(state.query.length) {
+				query = state.query.split('&');
+			}
+			
 			for(var setting, i = 0; i < query.length; i++) {
 				setting = query[i].split('=');
 				flat[setting.shift()] = setting.join('=');
 			}
-			
+		
 			state.data.serialized = state.data.flattened = flat;
 			state.data.json = state.data.expanded = __expand(state.data.serialized);
 			
