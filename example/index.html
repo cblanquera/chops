@@ -42,6 +42,7 @@
 				'chops': '/chops',
 			}
 		});
+		
 		require(['chops'], function(chops) {
 			chops().on('request', function(e, url, state) {
 				switch(state.url) {
@@ -52,8 +53,9 @@
 						jQuery('h1').html('Welcome to Some Path 2!');
 						break;
 					case '/auth':
-						if(state.data.json.user) {
-							jQuery('h1').html('Welcome ' + state.data.json.user[0].email);
+						console.log(state);
+						if(state.data.user) {
+							jQuery('h1').html('Welcome ' + state.data.user[0].email);
 						}
 						break;
 				}
