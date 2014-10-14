@@ -213,15 +213,17 @@
 				//is value a a string but a number ?
 				//and there is a decimal ?
 				if(typeof value == 'string' 
-				&& !/[a-zA-Z\+]/.test(value)
+				&& /^[\+\-]*[0-9\.]+$/.test(value)
 				&& !/^0/.test(value)
+				&& value.indexOf('.') === value.lastIndexOf('.')
 				&& !isNaN(parseFloat(value))
 				&& value.indexOf('.') != -1) {
 					value = parseFloat(value);
 				//is value a a string but a number ?
-				} else if(typeof value == 'string' 
-				&& !/[a-zA-Z\+]/.test(value)
+				} else if(typeof value == 'string'
+				&& /^[\+\-]*[0-9\.]+$/.test(value)
 				&& !/^0/.test(value) 
+				&& value.indexOf('.') === value.lastIndexOf('.')
 				&& !isNaN(parseFloat(value))) {
 					value = parseInt(value);
 				}
