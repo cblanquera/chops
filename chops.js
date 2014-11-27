@@ -1,7 +1,7 @@
 /**
  * Chops - Client HTML5 on Push State
  *
- * @version 0.0.6
+ * @version 0.0.8
  * @author Christian Blanquera <cblanquera@openovate.com>
  * @website https://github.com/cblanquera/chops
  * @license MIT
@@ -97,7 +97,7 @@
 		 */
 		this.redirect = function(url) {
 			__pushLink(url);
-			return this
+			return this;
 		};
 		
 		/**
@@ -158,7 +158,7 @@
 			//live listen to all links
 			$(document).on('click', 'a', function(e) {
 				//if another event says to do nothing
-				if(e.originalEvent.stop) {
+				if(e.originalEvent && e.originalEvent.stop) {
 					//do nothing
 					return;
 				}
@@ -380,11 +380,16 @@
 			}
 			
 			if(state.path.indexOf(origin) === 0) {
-				state.path = state.path.substr(origin.length);
+				state.path = state.path.substr(origin.length).split('?')[0];
 			}
 			
 			if(url.indexOf('#') !== -1) {
 				state.hash = url.split('#').pop();
+			}
+			
+			if(__useHash) {
+				state.path 	= state.hash.split('?')[0] || '/';
+				state.hash 	= '';
 			}
 			
 			//if there is a ?
@@ -406,27 +411,29 @@
 				state.serial.push({name: setting.shift(), value: setting.join('=')});
 			}
 			
-			if(__useHash) {
-				state.path 	= state.hash || '/';
-				state.hash 	= '';
-			}
-			
 			return state;
 		};
 		
 		var __pushLink = function(url) {
-			if(__useHash) {
-				var origin = window.location.protocol + '//' + window.location.hostname;
 			
-				if(window.location.port) {
-					origin += ':' + window.location.port;
-				}
-				
+			var origin = window.location.protocol + '//' + window.location.hostname;
+			
+			if(window.location.port) {
+				origin += ':' + window.location.port;
+			}
+					
+			if(__useHash) {
 				if(url.indexOf(origin) === 0) {
 					url = url.substr(origin.length);
 					url = origin + '/#' + url;
+				} else {
+					url = '/#' + url;
 				}
 			}
+			
+			if(url.indexOf(origin) !== 0) {
+				url = origin + url;
+			} 
 			
 			var state = __getState(url);
 			
@@ -447,6 +454,8 @@
 				if(url.indexOf(origin) === 0) {
 					url = url.substr(origin.length);
 					url = origin + '/#' + url;
+				} else {
+					url = '/#' + url;
 				}
 			}
 			
@@ -508,21 +517,15 @@
 	//if AMD
 	if(typeof define === 'function') {
 		define(['jquery', 'classified'], function(jQuery, classified) {
-			return function() {
-				return (classified(chops).singleton())();
-			};
+			return classified(chops).singleton();
 		});
 	//how about jQuery?
 	} else if(typeof jQuery === 'function' && typeof jQuery.extend === 'function') {
 		jQuery.extend({
-			chops: function() {
-				return (this.classified(chops).singleton())();
-			}
+			chops: jQuery.classified(chops).singleton()
 		});
 	//ok fine lets put it in windows.
 	} else if(typeof window === 'object') {
-		window.chops = function() {
-			return (window.classified(chops).singleton)();
-		};
+		window.chops = window.classified(chops).singleton();
 	}
 })();

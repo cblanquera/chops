@@ -11,6 +11,7 @@
 
 <body>
 	<h1>Welcome</h1>
+    <span class="redirect">Redirect to Some Path</span>
 	<a href="/some/path">Go to Some Path</a>
 	<a href="/some/path/2?user[0][name]&user[0][email]=bar">Go to Some Path 2</a>
     
@@ -44,6 +45,10 @@
 		});
 		
 		require(['chops'], function(chops) {
+			jQuery('span.redirect').click(function() {
+				chops().redirect('/some/path');
+			});
+			
 			chops().on('request', function(e, url, state) {
 				switch(state.url) {
 					case '/some/path':
