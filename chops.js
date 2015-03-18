@@ -1,7 +1,7 @@
 /**
  * Chops - Client HTML5 on Push State
  *
- * @version 0.0.8
+ * @version 0.0.9
  * @author Christian Blanquera <cblanquera@openovate.com>
  * @website https://github.com/cblanquera/chops
  * @license MIT
@@ -21,6 +21,7 @@
 		/* Private Properties
 		-------------------------------*/
 		var __useHash = false;
+		var __root = '';
 		
 		/* Magic
 		-------------------------------*/
@@ -101,6 +102,22 @@
 		};
 		
 		/**
+		 * Sets the root path of all calls
+		 *
+		 * @param string
+		 * @return this
+		 */
+		this.setRoot = function(path) {
+			__root = path.replace('/index.html', '').replace(/\/\//ig, '/');
+			
+			if(__root.lastIndexOf('/') === (__root.length - 1)) {
+				__root = __root.substr(0, __root.length - 1);
+			}
+			
+			return this;
+		};
+		
+		/**
 		 * Global event trigger for the server
 		 *
 		 * @return this
@@ -117,6 +134,11 @@
 		 */
 		this.useHash = function() {
 			__useHash = true;
+			
+			if(__root === '') {
+				this.setRoot(window.location.pathname);
+			}
+			
 			return this;
 		};
 		
@@ -421,13 +443,13 @@
 			if(window.location.port) {
 				origin += ':' + window.location.port;
 			}
-					
+			
 			if(__useHash) {
 				if(url.indexOf(origin) === 0) {
 					url = url.substr(origin.length);
-					url = origin + '/#' + url;
+					url = origin + __root + '/#' + url;
 				} else {
-					url = '/#' + url;
+					url = __root + '/#' + url;
 				}
 			}
 			
@@ -453,9 +475,9 @@
 				
 				if(url.indexOf(origin) === 0) {
 					url = url.substr(origin.length);
-					url = origin + '/#' + url;
+					url = origin + __root + '/#' + url;
 				} else {
-					url = '/#' + url;
+					url = __root + '/#' + url;
 				}
 			}
 			
